@@ -78,7 +78,7 @@ export default function ParkourGame() {
   const [lightningFlash, setLightningFlash] = useState(0);
   const [lightningPosition, setLightningPosition] = useState(50);
   const [moonY, setMoonY] = useState(window.innerHeight);
-  const [sunY, setSunY] = useState(0); // ☀️ Sol começa no topo
+  const [sunY, setSunY] = useState(window.innerHeight); // ✅ Sol começa na mesma altura da lua
   const [flashScreen, setFlashScreen] = useState(false);
 
   // Áudios
@@ -95,7 +95,7 @@ export default function ParkourGame() {
   // ===== INICIALIZAÇÃO =====
   useLayoutEffect(() => {
     setMoonY(window.innerHeight);
-    setSunY(0);
+    setSunY(window.innerHeight); // ✅ Sol começa na mesma altura que a lua
   }, []);
 
   // ===== REINICIAR JOGO =====
@@ -112,7 +112,7 @@ export default function ParkourGame() {
     setTylerFrame(0);
     tylerFrameTimeRef.current = performance.now();
     setMoonY(window.innerHeight);
-    setSunY(0);
+    setSunY(window.innerHeight);
 
     if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     gameLoopRef.current = null;
@@ -294,20 +294,20 @@ export default function ParkourGame() {
         }
       }
 
-      // Animação do Sol
+      // ✅ Animação do Sol — desce 100px até 2000
       if (scoreRef.current <= 2000) {
         const progress = scoreRef.current / 2000;
-        setSunY(progress * (window.innerHeight - 100));
+        setSunY(window.innerHeight - progress * 100);
       }
 
-      // Animação da Lua
-      if (scoreRef.current >= 2500) {
+      // ✅ Animação da Lua — só começa aos 3000
+      if (scoreRef.current >= 3000) {
         let y;
         if (scoreRef.current <= 4000) {
-          y = window.innerHeight; // fica no topo até 4000
+          y = window.innerHeight; // escondida no topo
         } else {
           const progress = Math.min((scoreRef.current - 4000) / 1000, 1);
-          y = window.innerHeight - progress * (window.innerHeight - 100);
+          y = window.innerHeight - progress * 100; // desce 100px
         }
         setMoonY(y);
       }
@@ -428,7 +428,7 @@ export default function ParkourGame() {
       )}
 
       {/* 🌙 Lua */}
-      {score >= 2500 && (
+      {score >= 3000 && (
         <img
           src="/img/lua.png"
           alt="Lua"
@@ -441,7 +441,7 @@ export default function ParkourGame() {
             transition: 'top 1s linear',
             zIndex: 10,
             filter: 'brightness(1.2) drop-shadow(0 0 10px yellow)',
-            opacity: score >= 2500 && score < 3000 ? (score - 2500) / 500 : 1,
+            opacity: score >= 3000 && score < 3500 ? (score - 3000) / 500 : 1, // fade-in suave
           }}
         />
       )}
@@ -635,7 +635,6 @@ export default function ParkourGame() {
       <audio ref={backgroundMusicRef} src="/img/musica_fundo.mp3" preload="auto" loop />
       <audio ref={thunderSoundRef} src="/img/raio.mp3" preload="auto" />
       <audio ref={rainSoundRef} src="/img/chuva.mp3" preload="auto" loop />
-      {/* Adicione um som de neve se quiser: */}
       {/* <audio ref={snowSoundRef} src="/img/neve.mp3" preload="auto" loop /> */}
     </div>
   );
