@@ -77,8 +77,8 @@ export default function ParkourGame() {
   // Efeitos
   const [lightningFlash, setLightningFlash] = useState(0);
   const [lightningPosition, setLightningPosition] = useState(50);
-  const [moonY, setMoonY] = useState(window.innerHeight);
-  const [sunY, setSunY] = useState(window.innerHeight); // ✅ Sol começa na mesma altura da lua
+  const [moonY, setMoonY] = useState(window.innerHeight + 200); // Começa abaixo da tela
+  const [sunY, setSunY] = useState(0); // ✅ Sol começa no topo
   const [flashScreen, setFlashScreen] = useState(false);
 
   // Áudios
@@ -94,8 +94,8 @@ export default function ParkourGame() {
 
   // ===== INICIALIZAÇÃO =====
   useLayoutEffect(() => {
-    setMoonY(window.innerHeight);
-    setSunY(window.innerHeight); // ✅ Sol começa na mesma altura que a lua
+    setMoonY(window.innerHeight + 200); // fora da tela, abaixo
+    setSunY(0);
   }, []);
 
   // ===== REINICIAR JOGO =====
@@ -111,8 +111,8 @@ export default function ParkourGame() {
     setShowGameOverVideo(false);
     setTylerFrame(0);
     tylerFrameTimeRef.current = performance.now();
-    setMoonY(window.innerHeight);
-    setSunY(window.innerHeight);
+    setMoonY(window.innerHeight + 200);
+    setSunY(0);
 
     if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     gameLoopRef.current = null;
@@ -163,7 +163,7 @@ export default function ParkourGame() {
             return;
           }
           startJump();
-        }, 500); // Intervalo entre pulos ao segurar
+        }, 500);
         spacePressedRef.current = interval;
       }
     }
@@ -294,22 +294,26 @@ export default function ParkourGame() {
         }
       }
 
-      // ✅ Animação do Sol — desce 100px até 2000
+      // ✅ Animação do Sol — desce até 2000
       if (scoreRef.current <= 2000) {
         const progress = scoreRef.current / 2000;
-        setSunY(window.innerHeight - progress * 100);
+        setSunY(progress * (window.innerHeight - 100));
       }
 
-      // ✅ Animação da Lua — só começa aos 3000
-      if (scoreRef.current >= 3000) {
-        let y;
+      // ✅ Animação da Lua — aparece gradualmente entre 2000 e 4000
+      if (scoreRef.current >= 2000) {
+        const moonStartY = window.innerHeight + 200; // começa abaixo da tela
+        const moonTargetY = 100; // posição alvo no topo
+
         if (scoreRef.current <= 4000) {
-          y = window.innerHeight; // escondida no topo
+          const progress = (scoreRef.current - 2000) / 2000; // 0 a 1 entre 2000-4000
+          const y = moonStartY - progress * (moonStartY - moonTargetY);
+          setMoonY(y);
         } else {
           const progress = Math.min((scoreRef.current - 4000) / 1000, 1);
-          y = window.innerHeight - progress * 100; // desce 100px
+          const y = 100 + progress * (window.innerHeight - 200);
+          setMoonY(y);
         }
-        setMoonY(y);
       }
 
       gameLoopRef.current = requestAnimationFrame(loop);
@@ -393,6 +397,9 @@ export default function ParkourGame() {
   // ✅ Calcula a posição do marcador na barra de progresso (0 a 100%)
   const progressPercent = Math.min((score / 10000) * 100, 100);
 
+  // ✅ Calcula opacidade da lua entre 2000 e 4000
+  const moonOpacity = score < 2000 ? 0 : Math.min((score - 2000) / 2000, 1);
+
   return (
     <div
       className={`min-h-screen relative overflow-hidden ${getBackgroundClass(score)}`}
@@ -427,8 +434,8 @@ export default function ParkourGame() {
         />
       )}
 
-      {/* 🌙 Lua */}
-      {score >= 3000 && (
+      {/* 🌙 Lua — aparece gradualmente entre 2000 e 4000 */}
+      {score >= 2000 && (
         <img
           src="/img/lua.png"
           alt="Lua"
@@ -438,10 +445,14 @@ export default function ParkourGame() {
             height: '25vw',
             left: '5%',
             top: `${moonY}px`,
-            transition: 'top 1s linear',
+            transition: 'top 0.5s ease-out, opacity 0.5s ease-out',
             zIndex: 10,
             filter: 'brightness(1.2) drop-shadow(0 0 10px yellow)',
-            opacity: score >= 3000 && score < 3500 ? (score - 3000) / 500 : 1, // fade-in suave
+            opacity: moonOpacity,
+          }}
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.parentElement.innerHTML = '<div style="width:100%;height:100%;background:#D1D5FF;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:8vw;">🌙</div>';
           }}
         />
       )}
